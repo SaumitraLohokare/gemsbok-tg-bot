@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -9,6 +12,11 @@ import (
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
+
+type Transaction struct {
+	Amount             float64
+	Comment, Timestamp string
+}
 
 func main() {
 	var (
@@ -50,7 +58,7 @@ func main() {
 			return
 		}
 
-		amt, err := strconv.Atoi(command_args[1])
+		amt, err := strconv.ParseFloat(command_args[1], 64)
 		if err != nil {
 			msg = "Usage for /add command is:\n/add <amount> <comment>"
 			b.Send(m.Sender, msg)
@@ -61,7 +69,17 @@ func main() {
 
 		timestamp := time.Now()
 
-		msg = "Added to your account: " + strconv.Itoa(amt) + "\nwith comment: " + comment + "\nTime: " + timestamp.Format("2006-01-02 15:04:05")
+		msg = "Added to your account: " + fmt.Sprintf("%f", amt) + "\nwith comment: " + comment + "\nTime: " + timestamp.Format("2006-01-02 15:04:05")
+
+		data := Transaction{
+			Amount:    amt,
+			Comment:   comment,
+			Timestamp: timestamp.Format("2006-01-02 15:04:05"),
+		}
+
+		file, _ := json.MarshalIndent(data, "", " ")
+		_ = ioutil.WriteFile("storage.json", file, os.ModeAppend)
+
 		b.Send(m.Sender, msg)
 	})
 
